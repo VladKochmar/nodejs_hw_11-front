@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Продукти</title>
+  <!-- Підключення CSS для стилів -->
+  <link rel="stylesheet" href="../styles/main.css" />
+  <!-- Підключення необхідних скриптів -->
+  <script src="../scripts/RequestManager.js"></script>
+  <script src="../scripts/ListDataManager.js"></script>
+  <script src="../scripts/settings.js"></script>
+  <script src="../scripts/HeaderManager.js"></script>
+  <script src="../scripts/ProductsApiManager.js"></script>
+</head>
+
+<body>
+  <script>
+    // Використання класу HeaderManager для створення заголовка з меню
+    document.addEventListener('DOMContentLoaded', () => {
+      new HeaderManager('products/list.html', menuItems)
+    })
+  </script>
+  <main class="main">
+    <h1 class="title">Список продуктів</h1>
+    <!-- Контейнер для таблиці з продуктами -->
+    <div id="table-container"></div>
+    <!-- Спіннер завантаження -->
+    <div class="loading" id="loading-spinner" style="display: none">
+      <div class="spinner"></div>
+      Завантаження...
+    </div>
+    <!-- Повідомлення про помилку -->
+    <div class="error-message" id="error-message" style="display: none">
+      Виникла помилка при завантаженні даних.
+    </div>
+    <hr />
+    <!-- Посилання для додавання нового продукту -->
+    <a href="./form.html" id="add-product">Додати новий продукт</a>
+  </main>
+
+  <script>
+    // Функція, що виконується при завантаженні сторінки
+    window.onload = async function () {
+      const data = await ProductsApiManager.getProducts()
+      console.log('data', data);
+
+
+      // Функція для видалення продукту за ідентифікатором
+      async function deleteFunction(id) {
+        await ProductsApiManager.deleteProduct(id)
+        window.location.reload()
+      }
+
+      function displayLink(userType = null) {
+        const formLink = document.getElementById('add-product')
+        if (RequestManager.isAuthenticated() && userType === 'admin')
+          formLink.style.display = 'inline-block'
+        else
+          formLink.style.display = 'none'
+      }
+
+      // Функція для отримання даних та відображення таблиці продуктів
+      async function fetchDataAndDisplay() {
+        const loadingSpinner = document.getElementById('loading-spinner')
+        const errorMessage = document.getElementById('error-message')
+        const tableContainer = document.getElementById('table-container')
+
+        try {
+          loadingSpinner.style.display = 'block'
+          tableContainer.innerHTML = ''
+          errorMessage.style.display = 'none'
+
+          // Отримання даних продуктів з сервера
+          // const data = await ProductsApiManager.getProducts()
+
+
+
+          // Обробка зображень продуктів
+          const productsList = data.products.map((prod) => ({
+            ...prod,
+          }))
+
+          if (productsList) {
+            const fields = { title: 'Назва', price: 'Ціна', description: 'Опис' }
+
+
+            const createLinkFunction = () => `form.html`
+            // Створення таблиці продуктів
+            const table = ListDataManager.createTableFromList(
+              productsList,
+              fields,
+              // Перевірка авторизації користувача
+              // додаємо пункти для регадування і видаленяня
+              // якщо користувач виконав автентифікацію
+              data?.user?.type === 'admin' && RequestManager.isAuthenticated() && createLinkFunction,
+              data?.user?.type === 'admin' && RequestManager.isAuthenticated() && deleteFunction
+            )
+
+            tableContainer.append(table)
+          } else {
+            throw new Error('Дані відсутні')
+          }
+        } catch (error) {
+          console.error('Помилка при завантаженні даних:', error)
+          errorMessage.style.display = 'block'
+        } finally {
+          loadingSpinner.style.display = 'none'
+        }
+      }
+
+      // Виклик функції для отримання та відображення даних
+      fetchDataAndDisplay()
+      displayLink(data?.user?.type)
+    }
+  </script>
+</body>
+
+</html>

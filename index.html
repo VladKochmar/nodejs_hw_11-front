@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Головна</title>
+  <link rel="stylesheet" href="./styles/main.css">
+  <script src="./scripts/HeaderManager.js"></script>
+  <script src="./scripts/RequestManager.js"></script>
+  <script src="./scripts/settings.js"></script>
+</head>
+
+<body>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      new HeaderManager('index.html', menuItems)
+    })
+  </script>
+  <main class="main">
+    <h1 class="title">Вітаємо на нашому сайті!</h1>
+  </main>
+</body>
+
+</html>

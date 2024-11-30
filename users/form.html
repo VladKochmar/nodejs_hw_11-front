@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Форма користувача</title>
+  <link rel="stylesheet" href="../styles/main.css" />
+  <script src="../scripts/RequestManager.js"></script>
+  <script src="../scripts/settings.js"></script>
+  <script src="../scripts/FormManager.js"></script>
+  <script src="../scripts/HeaderManager.js"></script>
+  <script src="../scripts/UsersApiManager.js"></script>
+</head>
+
+<body>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      new HeaderManager('users/form.html', menuItems)
+    })
+  </script>
+  <main class="main">
+    <h1 class="title">Форма користувача</h1>
+    <div id="form-container"></div>
+    <div class="error-message" id="error-message" style="display: none">
+      Виникла помилка при завантаженні сторінки.
+    </div>
+  </main>
+  <script>
+    window.addEventListener('beforeunload', () => {
+      localStorage.removeItem('itemId')
+    })
+
+    window.onload = () => {
+      const FORM_FIELDS = [
+        { label: 'Ім\'я', type: 'text', name: 'username' },
+        { label: 'Пошта', type: 'email', name: 'email' },
+      ]
+
+      const errorMessage = document.getElementById('error-message')
+      const formContainer = document.getElementById('form-container')
+
+      function isAllowed() {
+        if (!RequestManager.isAuthenticated()) {
+          window.location.href = '../auth/login.html'
+        }
+      }
+
+      async function displayForm() {
+        try {
+          const userId = localStorage.getItem('itemId')
+
+          let user = null
+
+          if (userId) {
+            user = await UsersApiManager.getUserById(userId)
+            console.log(user?.data);
+
+            if (!user?.data) throw new Error('Користувач відстуній або був видалений')
+          }
+
+          new FormManager(FORM_FIELDS, submit, user?.data || {}).render('form-container')
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      async function submit(data) {
+        try {
+          if (data._id) {
+            return await UsersApiManager.editUser(data._id, data)
+          }
+
+          await ProductsApiManager.addUser(data)
+        } catch (err) {
+          const message = `Помилка: ${err.message}`
+          errorMessage.innerText = message
+        }
+      }
+
+      isAllowed()
+      displayForm()
+    }
+  </script>
+</body>
+
+</html>

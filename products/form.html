@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Форма Продукту</title>
+  <link rel="stylesheet" href="../styles/main.css" />
+  <script src="../scripts/RequestManager.js"></script>
+  <script src="../scripts/settings.js"></script>
+  <script src="../scripts/FormManager.js"></script>
+  <script src="../scripts/HeaderManager.js"></script>
+  <script src="../scripts/ProductsApiManager.js"></script>
+</head>
+
+<body>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      new HeaderManager('products/form.html', menuItems)
+    })
+  </script>
+  <main class="main">
+    <h1 class="title">Форма Продукту</h1>
+    <div id="form-container"></div>
+    <!-- Повідомлення про помилку -->
+    <div class="error-message" id="error-message" style="display: none">
+      Виникла помилка при завантаженні сторінки.
+    </div>
+  </main>
+  <script>
+    window.addEventListener('beforeunload', () => {
+      localStorage.removeItem('itemId')
+    })
+
+    window.onload = async function () {
+      const FORM_FIELDS = [
+        { label: 'Назва', type: 'text', name: 'title' },
+        { label: 'Ціна', type: 'number', name: 'price' },
+        { label: 'Опис', type: 'text', name: 'description' }
+      ]
+
+      const errorMessage = document.getElementById('error-message')
+      const formContainer = document.getElementById('form-container')
+
+      function isAllowed() {
+        if (!RequestManager.isAuthenticated()) {
+          window.location.href = '../auth/login.html'
+        }
+      }
+
+      async function displayForm() {
+        try {
+          const productId = localStorage.getItem('itemId')
+
+          let data = null
+
+          if (productId) {
+            data = await ProductsApiManager.getProductById(productId)
+            if (!data?.product) throw new Error('Продукт відстуній або був видалений')
+          }
+
+          new FormManager(FORM_FIELDS, submit, data?.product || {}).render('form-container')
+
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      async function submit(data) {
+        try {
+          if (data._id) {
+            return await ProductsApiManager.editProduct(data._id, data)
+          }
+
+          await ProductsApiManager.addProduct(data)
+        } catch (err) {
+          const message = `Помилка: ${err.message}`
+          errorMessage.innerText = message
+        }
+      }
+
+      isAllowed()
+      displayForm()
+    }
+  </script>
+</body>
+
+</html>

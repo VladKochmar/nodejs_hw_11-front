@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Користувачі</title>
+  <!-- Підключення CSS для стилів -->
+  <link rel="stylesheet" href="../styles/main.css" />
+  <!-- Підключення необхідних скриптів -->
+  <script src="../scripts/RequestManager.js"></script>
+  <script src="../scripts/ListDataManager.js"></script>
+  <script src="../scripts/settings.js"></script>
+  <script src="../scripts/HeaderManager.js"></script>
+  <script src="../scripts/UsersApiManager.js"></script>
+</head>
+
+<body>
+  <script>
+    // Використання класу HeaderManager для створення заголовка з меню
+    document.addEventListener('DOMContentLoaded', () => {
+      new HeaderManager('users/list.html', menuItems)
+    })
+  </script>
+  <main class="main">
+    <h1 class="title">Список користувачів</h1>
+    <!-- Контейнер для таблиці з користувачами -->
+    <div id="table-container"></div>
+    <!-- Спіннер завантаження -->
+    <div class="loading" id="loading-spinner" style="display: none">
+      <div class="spinner"></div>
+      Завантаження...
+    </div>
+    <!-- Повідомлення про помилку -->
+    <div class="error-message" id="error-message" style="display: none">
+      Виникла помилка при завантаженні даних.
+    </div>
+    <hr />
+    <!-- Посилання для додавання нового користувача -->
+    <a href="../auth/signup.html" id="add-user">Додати користувача</a>
+  </main>
+  <script>
+    // Функція, що виконується при завантаженні сторінки
+    window.onload = async function () {
+      const data = await UsersApiManager.getUsers()
+      console.log('users data', data);
+
+      function isAllowed(userType) {
+        if (!RequestManager.isAuthenticated() || userType !== 'admin') {
+          window.location.href = '../auth/login.html'
+        }
+      }
+
+      // Функція для видалення користувача за ідентифікатором
+      async function deleteFunction(id) {
+        await UsersApiManager.deleteUser(id)
+        window.location.reload()
+      }
+
+      function displayLink() {
+        const formLink = document.getElementById('add-user')
+        if (RequestManager.isAuthenticated())
+          formLink.style.display = 'inline-block'
+        else
+          formLink.style.display = 'none'
+      }
+
+      // Функція для отримання даних та відображення таблиці користувачів
+      async function fetchDataAndDisplay() {
+        const loadingSpinner = document.getElementById('loading-spinner')
+        const errorMessage = document.getElementById('error-message')
+        const tableContainer = document.getElementById('table-container')
+
+        try {
+          loadingSpinner.style.display = 'block'
+          tableContainer.innerHTML = ''
+          errorMessage.style.display = 'none'
+
+          const usersList = data?.users
+
+          if (usersList) {
+            const fields = { username: "Ім'я", email: 'Email' }
+
+            const createLinkFunction = () => `form.html`
+            const table = ListDataManager.createTableFromList(
+              usersList,
+              fields,
+              // Перевірка авторизації користувача
+              // додаємо пункти для регадування і видаленяня
+              // якщо користувач виконав автентифікацію
+              RequestManager.isAuthenticated() && createLinkFunction,
+              RequestManager.isAuthenticated() && deleteFunction
+            )
+
+            tableContainer.append(table)
+          } else {
+            throw new Error('Дані відсутні')
+          }
+        } catch (error) {
+          console.error('Помилка при завантаженні даних:', error)
+          errorMessage.style.display = 'block'
+        } finally {
+          loadingSpinner.style.display = 'none'
+        }
+      }
+
+      // Виклик функції для отримання та відображення даних
+      isAllowed(data?.user.type)
+      fetchDataAndDisplay()
+      displayLink()
+    }
+  </script>
+</body>
+
+</html>
